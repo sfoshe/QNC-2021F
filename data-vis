@@ -1,0 +1,64 @@
+require(ggplot2)
+require(reshape2)
+require("dplyr")
+require("tidyr")
+library(vioplot)
+require("greekLetters")
+
+#growth curves
+gc <- read.csv("fake_curvedata_bio_av.csv")
+gc <- gather(gc, key=measure, value=OD, c("ANo_bacteria", "BVitreous", "CDIBI_0.1uM", "DDIBI_1uM"))
+
+sem <- read.csv("fake_curvedata_sem.csv")
+sem <- gather(sem, key=measure, value=sems, c("ANo_bacteria", "BVitreous", "CDIBI_0.1uM", "DDIBI_1uM"))
+
+gc.summary <- data.frame(Time=gc$ï..Time_h, n=5, mean=gc$OD)
+gc.summary$sem <- sem$sems
+gc.summary$CI_low <- gc.summary$mean + qt((1-0.95)/2, df=gc.summary$n-1)*gc.summary$sem
+gc.summary$CI_high <- gc.summary$mean - qt((1-0.95)/2, df=gc.summary$n-1)*gc.summary$sem
+  
+c <- ggplot(gc, aes(x=ï..Time_h, y=OD, group=measure, color=measure)) + scale_color_manual(labels=c("No bacteria", "Vitreous", "0.1uM DIBI", "1uM DIBI"), values=c(2,4,5,7)) + geom_line() + geom_point() 
+c <- c + geom_ribbon(aes(ymin=gc.summary$CI_low, ymax=gc.summary$CI_high), alpha=0.2)
+c + labs(x="Time (h)", y="OD600 (Opacity)", title="Effect of DIBI on growth curves (simulated data)", color=NULL)
+
+#violin plot for OD600
+
+od_av <- read.csv("fake_MIC_av.csv")
+
+a1 <- od_av[1:5,1]
+a2 <- od_av[1:5,2]
+a3 <- od_av[1:5,3]
+a4 <- od_av[1:5,4]
+
+vioplot(a1, a2, a3, a4, names=c("No bacteria", "Vitreous", "0.1uM DIBI", "1uM DIBI"), ylab=paste("Relative ",greeks("Delta"), "OD600"), col=c(2,4,5,7))
+title("Effect of DIBI on bacterial growth (simulated data)")
+stripchart(od_av, vertical=TRUE, method="jitter", add=TRUE)
+
+#violin plot for bactericidal example
+
+cidal_raw <- read.csv("fake_bactericidal_raw.csv")
+cidal_av <- read.csv("fake_bactericidal_av.csv")
+
+x1 <- cidal_av[1:5,1]
+x2 <- cidal_av[1:5,2]
+x3 <- cidal_av[1:5,3]
+x4 <- cidal_av[1:5,4]
+
+vioplot(x1, x2, x3, x4, names=c("No bacteria", "Vitreous", "0.1uM DIBI", "1uM DIBI"), col=c(2,4,5,7), ylab="Number of Colonies")
+title("Bactericidal (simulated data)")
+stripchart(cidal_av, vertical=TRUE, method="jitter", add=TRUE)
+
+#violin plot for bacteriostatic example
+
+static_raw <- read.csv("fake_bacteriostatic_raw.csv")
+static_av <- read.csv("fake_bacteriostatic_av.csv")
+
+x5 <- static_av[1:5,1]
+x6 <- static_av[1:5,2]
+x7 <- static_av[1:5,3]
+x8 <- static_av[1:5,4]
+
+v1 <- vioplot(x5, x6, x7, x8, names=c("No bacteria", "Vitreous", "0.1uM DIBI", "1uM DIBI"), ylab="Number of Colonies", col=c(2,4,5,7))
+v1 <- stripchart(static_av, vertical=TRUE, method="jitter", add=TRUE) 
+v1 <- v1 + scale_shape_manual(values=c(19,15,18,17))
+title("Bacteriostatic (simulated data)")
